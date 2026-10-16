@@ -1,28 +1,35 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RestaurantController;
+use App\Models\Restaurant;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// Public Pages
 Route::get('/', function () {
+    $restaurants = Restaurant::latest()->take(3)->get();
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'restaurants' => $restaurants,
     ]);
-});
+})->name('welcome');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard/page');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Authenticated Pages
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    Route::get('/dashboard', function () {
+        $restaurants = Restaurant::latest()->get();
+        return Inertia::render('Dashboard', ['restaurants' => $restaurants]);
+    })->name('dashboard');
 
-Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/products', fn () => Inertia::render('Products/page'))->name('products');
+
+    Route::resource('restaurants', RestaurantController::class);
 });
 
 require __DIR__.'/auth.php';
